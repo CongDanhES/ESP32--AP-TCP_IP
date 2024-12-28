@@ -1,5 +1,6 @@
 const char index_html[] PROGMEM = R"rawliteral(
 <!DOCTYPE HTML><html>
+<meta http-equiv="refresh" content="5">
 <head>
   <title>ĐIỀU KHIỂN TỐC ĐỘ XOAY</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -28,6 +29,28 @@ function sendAction(fan, action) {
   xhr.open("GET", "/update?fan=" + fan + "&action=" + action, true);
   xhr.send();
 }
+
+function fetchStatus() {
+  var xhr = new XMLHttpRequest();
+  xhr.open("GET", "/status", true);
+  xhr.onload = function() {
+    if (xhr.status == 200) {
+      var statusData = JSON.parse(xhr.responseText);
+      var buttons = "";
+      for (var i = 0; i < statusData.length; i++) {
+        var status = statusData[i].status;
+        buttons += "<h4>Quạt " + statusData[i].fan + ": " + status + "</h4>";
+        buttons += "<h4>Mức: "+ String(fanValues[i])+"</h4>";
+        buttons += "<button class=\"button button-decrease\" onclick=\"sendAction(" + (statusData[i].fan - 1) + ", 'decrease')\">Giảm tốc độ</button>";
+        buttons += "<button class=\"button button-increase\" onclick=\"sendAction(" + (statusData[i].fan - 1) + ", 'increase')\">Tăng tốc độ</button><br><br>";
+      }
+      document.getElementById("buttons").innerHTML = buttons;
+    }
+  };
+  xhr.send();
+}
+
+setInterval(fetchStatus, 1000); 
 </script>
 </body>
 </html>

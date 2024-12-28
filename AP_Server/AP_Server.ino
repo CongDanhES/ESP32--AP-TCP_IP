@@ -1,152 +1,3 @@
-// #include <WiFi.h>
-// #include <AsyncTCP.h>
-// #include <ESPAsyncWebServer.h>
-// #include "web.h"
-// #include <esp_task_wdt.h>
-// #include <WiFiClient.h>
-// #include <vector>
-
-// // Replace with your network credentials
-// const char* ssid = "ESP32_AP";
-// const char* password = "12345678";
-
-// const char* PARAM_INPUT_1 = "fan";
-// const char* PARAM_INPUT_2 = "action";
-
-// // Create AsyncWebServer object on port 80
-// AsyncWebServer server(80);
-
-// const int serverPort = 5000;
-// WiFiServer tcpServer(serverPort);
-// std::vector<WiFiClient> clients; // Vector to store connected clients
-
-// int fanValues[6] = {0, 0, 0, 0, 0, 0}; // Values for FAN1, FAN2, FAN3, FAN4, FAN5, FAN6
-
-// // Web button
-// String processor(const String& var){
-//   if(var == "BUTTONPLACEHOLDER"){
-//     String buttons = "";
-//     for (int i = 0; i < 6; i++) {
-//       buttons += "<h4>FAN" + String(i+1) + "</h4>";
-//       buttons += "<button class=\"button button-decrease\" onclick=\"sendAction(" + String(i) + ", 'decrease')\">Giảm tốc độ</button>";
-//       buttons += "<button class=\"button button-increase\" onclick=\"sendAction(" + String(i) + ", 'increase')\">Tăng tốc độ</button><br><br>";
-//     }
-//     return buttons;
-//   }
-//   return String();
-// }
-
-// // static IP 
-// IPAddress local_ip(192, 168, 4, 115); // static IP for AP mode
-// IPAddress gateway(192, 168, 4, 1);    // Gateway
-// IPAddress subnet(255, 255, 255, 0);   // Subnet Mask 
-
-// //broadcast message
-// void broadcast_Command(String message){
-//   for (auto& client : clients) {
-//     if (client.connected()) {
-//       client.println(message); // send to station
-//     }
-//   }
-// }
-
-// //create message
-// String create_Message(int fanIndex, int value) {
-//   String id = "FAN" + String(fanIndex + 1);
-//   String val = String(value);
-//   uint8_t checksum = (id[0] ^ id[1] ^ id[2] ^ id[3] ^ val[0]); 
-//   String message = "#" + id + ":" + val +String(checksum)+ "%";
-//   return message;
-// }
-
-// void setup(){
-//   // Serial port for debugging purposes
-//   Serial.begin(115200);
-
-//   // Set up the ESP32 as an access point
-//   WiFi.mode(WIFI_AP);
-//   WiFi.softAPConfig(local_ip, gateway, subnet);
-//   WiFi.softAP(ssid, password);
-//   delay(100); // Give some time for the AP to start
-
-
-//   // Print the IP address of the AP
-//   Serial.println("Access Point IP: ");
-//   Serial.println(WiFi.softAPIP());
-
-//   // Start TCP server
-//   tcpServer.begin();
-
-//   // Route for root / web page
-//   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
-//     request->send(200, "text/html", index_html, processor);
-//   });
-
-//   // Send a GET request to <ESP_IP>/update?fan=<inputMessage1>&action=<inputMessage2>
-//   server.on("/update", HTTP_GET, [] (AsyncWebServerRequest *request) {
-//     String inputMessage1;
-//     String inputMessage2;
-//     // GET input1 value on <ESP_IP>/update?fan=<inputMessage1>&action=<inputMessage2>
-//     if (request->hasParam(PARAM_INPUT_1) && request->hasParam(PARAM_INPUT_2)) {
-//       inputMessage1 = request->getParam(PARAM_INPUT_1)->value();
-//       inputMessage2 = request->getParam(PARAM_INPUT_2)->value();
-//       int fanIndex = inputMessage1.toInt();
-//       if (inputMessage2 == "increase" && fanValues[fanIndex] < 9) {
-//         fanValues[fanIndex]++;
-//         String message = create_Message(fanIndex, fanValues[fanIndex]);
-//         broadcast_Command(message);
-//       } else if (inputMessage2 == "decrease" && fanValues[fanIndex] > 0) {
-//         fanValues[fanIndex]--;
-//         String message = create_Message(fanIndex, fanValues[fanIndex]);
-//         broadcast_Command(message);
-//       }
-
-//       // Print current values to Serial
-//       Serial.print("FAN1 - Value: ");
-//       Serial.print(fanValues[0]);
-//       Serial.print(", FAN2 - Value: ");
-//       Serial.print(fanValues[1]);
-//       Serial.print(", FAN3 - Value: ");
-//       Serial.print(fanValues[2]);
-//       Serial.print(", FAN4 - Value: ");
-//       Serial.print(fanValues[3]);
-//       Serial.print(", FAN5 - Value: ");
-//       Serial.print(fanValues[4]);
-//       Serial.print(", FAN6 - Value: ");
-//       Serial.println(fanValues[5]);
-//     }
-//     else {
-//       inputMessage1 = "No message sent";
-//       inputMessage2 = "No message sent";
-//     }
-//     request->send(200, "text/plain", "OK");
-//   });
-
-//   // Start server
-//   server.begin();
-// }
-
-// void loop() {
-  
-//   // Handle new TCP client connections
-//   WiFiClient client = tcpServer.available();
-//   if (client) {
-//     clients.push_back(client);
-//   }
-
-//   // Check for data from clients and remove disconnected clients
-//   for (auto it = clients.begin(); it != clients.end(); ) {
-//     if (it->connected()) {
-//       if (it->available()) {
-//         String response = it->readStringUntil('\n'); // Đọc dữ liệu phản hồi
-//         Serial.println("Received from station: " + response);
-//       }
-//       ++it;
-//     } else {
-//       it = clients.erase(it); // Remove disconnected client
-//     }
-//   }
-// }
 #include <WiFi.h>
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
@@ -154,6 +5,18 @@
 #include <esp_task_wdt.h>
 #include <WiFiClient.h>
 #include <vector>
+#include <ESPmDNS.h>
+#include <ElegantOTA.h>
+
+#define NUMBERDEVICE 6
+const char* deviceIPs[NUMBERDEVICE] = {
+  "192.168.4.165",
+  "192.168.4.166",
+  "192.168.4.167",
+  "192.168.4.168",
+  "192.168.4.169",
+  "192.168.4.170"
+};
 
 // Replace with your network credentials
 const char* ssid = "ESP32_AP";
@@ -164,19 +27,28 @@ const char* PARAM_INPUT_2 = "action";
 
 // Create AsyncWebServer object on port 80
 AsyncWebServer server(80);
+AsyncWebServer OTA(8080);
 
 const int serverPort = 5000;
 WiFiServer tcpServer(serverPort);
-std::vector<WiFiClient> clients; // Vector to store connected clients
+// Vector to store connected clients
+std::vector<WiFiClient> clients; 
 
-int fanValues[6] = {0, 0, 0, 0, 0, 0}; // Values for FAN1, FAN2, FAN3, FAN4, FAN5, FAN6
+int fanValues[NUMBERDEVICE] = {0, 0, 0, 0, 0, 0};
+bool connectStatus[NUMBERDEVICE] = {false, false, false, false, false, false};
+
+const unsigned long HEARTBEAT_TIMEOUT = 3000;
+unsigned long lastHeartbeatTime[NUMBERDEVICE] = {0, 0, 0, 0, 0, 0};
 
 // Web button
+String status;
 String processor(const String& var){
   if(var == "BUTTONPLACEHOLDER"){
     String buttons = "";
-    for (int i = 0; i < 6; i++) {
-      buttons += "<h4>FAN" + String(i+1) + "</h4>";
+    for (int i = 0; i < NUMBERDEVICE; i++) {
+      status = connectStatus[i] ? " : Đã kết nối" : " : Chưa kết nối";
+      buttons += "<h4>Quạt " + String(i+1) + status + "</h4>";
+      buttons += "<h4>Mức: "+ String(fanValues[i])+"</h4>";
       buttons += "<button class=\"button button-decrease\" onclick=\"sendAction(" + String(i) + ", 'decrease')\">Giảm tốc độ</button>";
       buttons += "<button class=\"button button-increase\" onclick=\"sendAction(" + String(i) + ", 'increase')\">Tăng tốc độ</button><br><br>";
     }
@@ -185,42 +57,22 @@ String processor(const String& var){
   return String();
 }
 
-// static IP 
-IPAddress local_ip(192, 168, 4, 115); // static IP for AP mode
-IPAddress gateway(192, 168, 4, 1);    // Gateway
-IPAddress subnet(255, 255, 255, 0);   // Subnet Mask 
-
-// CRC-16-CCITT polynomial
-const uint16_t CRC_POLY = 0x1021;
-const uint16_t CRC_INIT = 0xFFFF;
-
-uint16_t crc16(const uint8_t* data, size_t length) {
-  uint16_t crc = CRC_INIT;
-  for (size_t i = 0; i < length; i++) {
-    crc ^= (data[i] << 8);
-    for (uint8_t j = 0; j < 8; j++) {
-      if (crc & 0x8000) {
-        crc = (crc << 1) ^ CRC_POLY;
-      } else {
-        crc <<= 1;
-      }
-    }
-  }
-  return crc;
-}
-
 // Create message
 String create_Message(int fanIndex, int value) {
+  // Create the data string
   String id = "FAN" + String(fanIndex + 1);
   String val = String(value);
   String data = id + ":" + val;
 
-  // Calculate CRC-16 checksum
-  uint16_t checksum = crc16((const uint8_t*)data.c_str(), data.length());
+  // Calculate XOR checksum
+  uint8_t checksum = 0;
+  for (size_t i = 0; i < data.length(); i++) {
+    checksum ^= data[i];
+  }
 
   // Convert checksum to hexadecimal string
-  char checksumStr[5];
-  sprintf(checksumStr, "%04X", checksum);
+  char checksumStr[3]; // Two hex digits + null terminator
+  sprintf(checksumStr, "%02X", checksum);
 
   // Create the message with the checksum
   String message = "#" + data + "*" + checksumStr + "%";
@@ -236,6 +88,11 @@ void broadcast_Command(String message){
   }
 }
 
+// static IP 
+IPAddress local_ip(192, 168, 4, 115); // static IP for AP mode
+IPAddress gateway(192, 168, 4, 1);    // Gateway
+IPAddress subnet(255, 255, 255, 0);   // Subnet Mask 
+
 void setup(){
   // Serial port for debugging purposes
   Serial.begin(115200);
@@ -249,6 +106,11 @@ void setup(){
   // Print the IP address of the AP
   Serial.println("Access Point IP: ");
   Serial.println(WiFi.softAPIP());
+
+  // OTA
+  ElegantOTA.begin(&OTA);    // Start ElegantOTA
+  OTA.begin();
+  // Serial.println("HTTP server started");
 
   // Start TCP server
   tcpServer.begin();
@@ -267,29 +129,14 @@ void setup(){
       inputMessage1 = request->getParam(PARAM_INPUT_1)->value();
       inputMessage2 = request->getParam(PARAM_INPUT_2)->value();
       int fanIndex = inputMessage1.toInt();
-      if (inputMessage2 == "increase" && fanValues[fanIndex] < 9) {
-        fanValues[fanIndex]++;
-        String message = create_Message(fanIndex, fanValues[fanIndex]);
-        broadcast_Command(message);
-      } else if (inputMessage2 == "decrease" && fanValues[fanIndex] > 0) {
-        fanValues[fanIndex]--;
-        String message = create_Message(fanIndex, fanValues[fanIndex]);
-        broadcast_Command(message);
+      int val;
+      if (inputMessage2 == "increase") {
+        val = (fanValues[fanIndex] == 9) ? fanValues[fanIndex] : (fanValues[fanIndex] + 1);
+      } else if (inputMessage2 == "decrease") {
+        val = (fanValues[fanIndex] == 0) ? fanValues[fanIndex] : (fanValues[fanIndex] - 1);
       }
-
-      // Print current values to Serial
-      Serial.print("FAN1 - Value: ");
-      Serial.print(fanValues[0]);
-      Serial.print(", FAN2 - Value: ");
-      Serial.print(fanValues[1]);
-      Serial.print(", FAN3 - Value: ");
-      Serial.print(fanValues[2]);
-      Serial.print(", FAN4 - Value: ");
-      Serial.print(fanValues[3]);
-      Serial.print(", FAN5 - Value: ");
-      Serial.print(fanValues[4]);
-      Serial.print(", FAN6 - Value: ");
-      Serial.println(fanValues[5]);
+      String message = create_Message(fanIndex, val);
+      broadcast_Command(message);
     }
     else {
       inputMessage1 = "No message sent";
@@ -298,8 +145,98 @@ void setup(){
     request->send(200, "text/plain", "OK");
   });
 
+  // Endpoint to serve JSON data
+  // server.on("/status", HTTP_GET, [](AsyncWebServerRequest *request){
+  //   String json = "[";
+  //   for (int i = 0; i < NUMBERDEVICE; i++) {
+  //     json += "{\"fan\":" + String(i+1) + ",\"status\":\"" + (connectStatus[i] ? "Đã kết nối" : "Chưa kết nối") + "\"}";
+  //     if (i < NUMBERDEVICE - 1) json += ",";
+  //   }
+  //   json += "]";
+  //   request->send(200, "application/json", json);
+  // });
+
+  server.on("/status", HTTP_GET, [](AsyncWebServerRequest *request){
+    String json = "[";
+    for (int i = 0; i < NUMBERDEVICE; i++) {
+      json += "{\"fan\":" + String(i+1) + ",\"status\":\"" + (connectStatus[i] ? "Đã kết nối" : "Chưa kết nối") + "\",\"level\":" + String(fanValues[i]) + "}";
+      if (i < NUMBERDEVICE - 1) json += ",";
+    }
+    json += "]";
+    request->send(200, "application/json", json);
+  });
+
   // Start server
   server.begin();
+}
+
+bool verifyXORChecksum(const String& message) {
+  // Find the position of the '*' character
+  int starPos = message.indexOf('*');
+  if (starPos == -1) {
+    return false; // Invalid message format
+  }
+
+  // Extract the data part and the checksum part
+  String data = message.substring(1, starPos); // Exclude the '#' character
+  String receivedChecksumStr = message.substring(starPos + 1, message.length() - 1);
+
+  // Convert the received checksum from hexadecimal string to integer
+  uint8_t receivedChecksum = strtol(receivedChecksumStr.c_str(), NULL, 16);
+
+  // Calculate the XOR checksum for the data part
+  uint8_t calculatedChecksum = 0;
+  for (size_t i = 0; i < data.length(); i++) {
+    calculatedChecksum ^= data[i];
+  }
+
+  // Compare the calculated checksum with the received checksum
+  return (calculatedChecksum == receivedChecksum);
+}
+
+// Update fan value from station 
+void updateFanValue(String& message) {
+  int idPos = message.indexOf(':');
+  String device = message.substring(1, idPos);
+
+  int val = int(message[message.indexOf('*') - 1]) - 48;
+
+  // Parse fan index from the device name (e.g., "FAN1")
+  if (device.startsWith("FAN")) {
+    int fanIndex = device.substring(3).toInt() - 1; // Extract fan number and convert to 0-based index
+    fanValues[fanIndex] = val;
+    Serial.println("Update: FAN" + String(fanIndex + 1) + ":" + String(val));
+  }
+}
+
+// Heartbeat
+void handleHeartbeat(String& message) {
+  int pos = message.indexOf('*');
+  int id = int(message[pos - 1]) - 1 - '0';
+  lastHeartbeatTime[id] = millis();
+  connectStatus[id] = true;
+}
+
+// Handle data
+void handleCommand(String& message) {
+  // Verify the XOR checksum  
+  if (verifyXORChecksum(message)) {
+    if (message.startsWith("#HEARTBEAT")) {
+      handleHeartbeat(message);
+    } else {
+      updateFanValue(message);
+    }
+  }
+}
+
+// Check if connected
+bool isClientConnected(const char* ip) {
+  for (auto& client : clients) {
+    if (client.connected() && client.remoteIP().toString() == String(ip)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 void loop() {
@@ -314,11 +251,25 @@ void loop() {
     if (it->connected()) {
       if (it->available()) {
         String response = it->readStringUntil('\n'); // Read data
+        handleCommand(response);
         Serial.println("Received from station: " + response);
       }
       ++it;
     } else {
+      Serial.println("Client disconnected: " + it->remoteIP().toString());
       it = clients.erase(it); // Remove disconnected client
     }
   }
+
+  // Check if the specific clients are connected
+  for (int i = 0; i < NUMBERDEVICE; i++) {
+    if (millis() - lastHeartbeatTime[i] > HEARTBEAT_TIMEOUT) {
+      connectStatus[i] = false;
+      fanValues[i] = 0;
+    } else {
+      connectStatus[i] = true;
+    }
+  }
+  
+  delay(1000); // Add a delay to avoid flooding the serial output
 }
