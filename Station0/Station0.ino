@@ -2,20 +2,20 @@
 #include <ElegantOTA.h>
 #include <ESPmDNS.h>
 
-#define DEVICE        3
-#define FANID         "FAN4"
-#define MDNS_NAME     "QUAT4"
+#define DEVICE        0
+#define FANID         "FAN1"
+#define MDNS_NAME     "QUAT1"
 #define PWM_PIN       2 
 #define FREQ          1000  
 #define RESOLUTION    8
-#define HEARTBEAT     "HEARTBEAT4"
+#define HEARTBEAT     "HEARTBEAT1"
 #define ESC_Pin       18 
 
 #define MAX           1340
 #define MIN           1100
 
 // Static IP configuration for the client
-IPAddress local_ip(192, 168, 4, 168); // Static IP for the client
+IPAddress local_ip(192, 168, 4, 165); // Static IP for the client
 IPAddress gateway(192, 168, 4, 1);  // Gateway IP
 IPAddress subnet(255, 255, 255, 0); // Subnet Mask
 

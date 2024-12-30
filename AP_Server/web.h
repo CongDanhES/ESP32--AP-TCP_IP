@@ -1,6 +1,6 @@
 const char index_html[] PROGMEM = R"rawliteral(
+<meta http-equiv="refresh" content="4">
 <!DOCTYPE HTML><html>
-<meta http-equiv="refresh" content="5">
 <head>
   <title>ĐIỀU KHIỂN TỐC ĐỘ XOAY</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">

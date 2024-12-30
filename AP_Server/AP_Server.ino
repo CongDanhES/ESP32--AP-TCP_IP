@@ -8,7 +8,9 @@
 #include <ESPmDNS.h>
 #include <ElegantOTA.h>
 
-#define NUMBERDEVICE 6
+#define NUMBERDEVICE 10
+#define CURRENT_DEVICE 6
+
 const char* deviceIPs[NUMBERDEVICE] = {
   "192.168.4.165",
   "192.168.4.166",
@@ -37,15 +39,17 @@ std::vector<WiFiClient> clients;
 int fanValues[NUMBERDEVICE] = {0, 0, 0, 0, 0, 0};
 bool connectStatus[NUMBERDEVICE] = {false, false, false, false, false, false};
 
-const unsigned long HEARTBEAT_TIMEOUT = 3000;
+const unsigned long HEARTBEAT_TIMEOUT = 5000;
+const unsigned long REQUIRE_HEARTBEAT_TIMEOUT = 2000;
 unsigned long lastHeartbeatTime[NUMBERDEVICE] = {0, 0, 0, 0, 0, 0};
+unsigned long lastCheckTime = 0;
 
 // Web button
 String status;
 String processor(const String& var){
   if(var == "BUTTONPLACEHOLDER"){
     String buttons = "";
-    for (int i = 0; i < NUMBERDEVICE; i++) {
+    for (int i = 0; i < NUMBERDEVICE-4; i++) {
       status = connectStatus[i] ? " : Đã kết nối" : " : Chưa kết nối";
       buttons += "<h4>Quạt " + String(i+1) + status + "</h4>";
       buttons += "<h4>Mức: "+ String(fanValues[i])+"</h4>";
@@ -79,6 +83,25 @@ String create_Message(int fanIndex, int value) {
   return message;
 }
 
+// Function to create heartbeat message
+String createHeartbeatMessage(int i) {
+  String message = "HEARTBEAT"+ String(i); // No data in this message, just the heartbeat identifier
+  // Calculate the XOR checksum for this message
+  uint8_t checksum = 0;
+  for (size_t i = 0; i < message.length(); i++) {
+    checksum ^= message[i];
+  }
+
+  // Convert checksum to hexadecimal string
+  char checksumStr[3]; // Two hex digits + null terminator
+  sprintf(checksumStr, "%02X", checksum);
+
+  // Update the message with the correct checksum
+  message = "#" +message +"*" + String(checksumStr) +"%";
+  return message;
+}
+
+
 // Broadcast message
 void broadcast_Command(String message){
   for (auto& client : clients) {
@@ -100,7 +123,8 @@ void setup(){
   // Set up the ESP32 as an access point
   WiFi.mode(WIFI_AP);
   WiFi.softAPConfig(local_ip, gateway, subnet);
-  WiFi.softAP(ssid, password);
+  // WiFi.softAP(ssid, password);
+  WiFi.softAP(ssid, password, 1, 0, 10);
   delay(100); // Give some time for the AP to start
 
   // Print the IP address of the AP
@@ -114,6 +138,13 @@ void setup(){
 
   // Start TCP server
   tcpServer.begin();
+  
+  // Start mDNS responder and set domain
+  if (!MDNS.begin("TTD")) { // "TTD.local"
+    Serial.println("Error setting up MDNS responder!");
+  } else {
+    Serial.println("mDNS responder started. Domain: TTD.local");
+  }
 
   // Route for root / web page
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
@@ -145,20 +176,9 @@ void setup(){
     request->send(200, "text/plain", "OK");
   });
 
-  // Endpoint to serve JSON data
-  // server.on("/status", HTTP_GET, [](AsyncWebServerRequest *request){
-  //   String json = "[";
-  //   for (int i = 0; i < NUMBERDEVICE; i++) {
-  //     json += "{\"fan\":" + String(i+1) + ",\"status\":\"" + (connectStatus[i] ? "Đã kết nối" : "Chưa kết nối") + "\"}";
-  //     if (i < NUMBERDEVICE - 1) json += ",";
-  //   }
-  //   json += "]";
-  //   request->send(200, "application/json", json);
-  // });
-
   server.on("/status", HTTP_GET, [](AsyncWebServerRequest *request){
     String json = "[";
-    for (int i = 0; i < NUMBERDEVICE; i++) {
+    for (int i = 0; i < NUMBERDEVICE-4; i++) {
       json += "{\"fan\":" + String(i+1) + ",\"status\":\"" + (connectStatus[i] ? "Đã kết nối" : "Chưa kết nối") + "\",\"level\":" + String(fanValues[i]) + "}";
       if (i < NUMBERDEVICE - 1) json += ",";
     }
@@ -255,14 +275,11 @@ void loop() {
         Serial.println("Received from station: " + response);
       }
       ++it;
-    } else {
-      Serial.println("Client disconnected: " + it->remoteIP().toString());
-      it = clients.erase(it); // Remove disconnected client
-    }
+    }  
   }
 
   // Check if the specific clients are connected
-  for (int i = 0; i < NUMBERDEVICE; i++) {
+  for (int i = 0; i < CURRENT_DEVICE+1; i++) {
     if (millis() - lastHeartbeatTime[i] > HEARTBEAT_TIMEOUT) {
       connectStatus[i] = false;
       fanValues[i] = 0;
@@ -270,6 +287,13 @@ void loop() {
       connectStatus[i] = true;
     }
   }
-  
-  delay(1000); // Add a delay to avoid flooding the serial output
+
+  unsigned long currentMillis = millis();
+  if (currentMillis - lastCheckTime >= REQUIRE_HEARTBEAT_TIMEOUT) {
+    lastCheckTime = currentMillis;
+    for (int i = 0; i < CURRENT_DEVICE+1; i++){
+      broadcast_Command(createHeartbeatMessage(i));
+      delay(100);
+    }
+  }
 }
