@@ -21,8 +21,8 @@ const char* deviceIPs[NUMBERDEVICE] = {
 };
 
 // Replace with your network credentials
-const char* ssid = "ESP32_AP";
-const char* password = "12345678";
+const char* ssid = "TTD_Quat";
+const char* password = "TTD.2022";
 
 const char* PARAM_INPUT_1 = "fan";
 const char* PARAM_INPUT_2 = "action";
@@ -49,7 +49,7 @@ String status;
 String processor(const String& var){
   if(var == "BUTTONPLACEHOLDER"){
     String buttons = "";
-    for (int i = 0; i < NUMBERDEVICE-4; i++) {
+    for (int i = 0; i < NUMBERDEVICE-6; i++) {
       status = connectStatus[i] ? " : Đã kết nối" : " : Chưa kết nối";
       buttons += "<h4>Quạt " + String(i+1) + status + "</h4>";
       buttons += "<h4>Mức: "+ String(fanValues[i])+"</h4>";
@@ -140,7 +140,7 @@ void setup(){
   tcpServer.begin();
   
   // Start mDNS responder and set domain
-  if (!MDNS.begin("TTD")) { // "TTD.local"
+  if (!MDNS.begin("ttd")) { // "TTD.local"
     Serial.println("Error setting up MDNS responder!");
   } else {
     Serial.println("mDNS responder started. Domain: TTD.local");
@@ -178,7 +178,7 @@ void setup(){
 
   server.on("/status", HTTP_GET, [](AsyncWebServerRequest *request){
     String json = "[";
-    for (int i = 0; i < NUMBERDEVICE-4; i++) {
+    for (int i = 0; i < NUMBERDEVICE-6; i++) {
       json += "{\"fan\":" + String(i+1) + ",\"status\":\"" + (connectStatus[i] ? "Đã kết nối" : "Chưa kết nối") + "\",\"level\":" + String(fanValues[i]) + "}";
       if (i < NUMBERDEVICE - 1) json += ",";
     }
@@ -268,6 +268,7 @@ void loop() {
 
   // Check for data from clients and remove disconnected clients
   for (auto it = clients.begin(); it != clients.end(); ) {
+    Serial.println(it->remoteIP());
     if (it->connected()) {
       if (it->available()) {
         String response = it->readStringUntil('\n'); // Read data
@@ -276,6 +277,10 @@ void loop() {
       }
       ++it;
     }  
+    else {
+      Serial.println("Disconnect: " + it->remoteIP());
+      it = clients.erase(it);
+    }
   }
 
   // Check if the specific clients are connected

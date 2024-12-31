@@ -3,7 +3,7 @@
 int dutyCycle;
 const int pwmChannel = 0;        
 const int pwmFrequency = 50;     
-const int pwmResolution = 8;    
+const int pwmResolution = 16;    
 
 void setup() {
   // put your setup code here, to run once:
@@ -28,11 +28,13 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
   // 1100us / 20000us
-  for(int i=0; i<8;i++){
-    dutyCycle = ((1100+i*30) * (1 << pwmResolution)) / 20000;
-    ledcWrite(pwmChannel, dutyCycle);
-    Serial.println(dutyCycle);
-    delay(2000);
-  }
-  
+  dutyCycle = (1060 * (1 << pwmResolution)) / 20000;
+  Serial.println(dutyCycle);
+  ledcWrite(pwmChannel, dutyCycle);
+  delay(5000);
+
+  dutyCycle = (1070 * (1 << pwmResolution)) / 20000;
+  Serial.println(dutyCycle);
+  ledcWrite(pwmChannel, dutyCycle);
+  delay(5000);
 }

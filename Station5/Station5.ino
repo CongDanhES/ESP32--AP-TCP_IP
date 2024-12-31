@@ -19,8 +19,8 @@ IPAddress local_ip(192, 168, 4, 170); // Static IP for the client
 IPAddress gateway(192, 168, 4, 1);  // Gateway IP
 IPAddress subnet(255, 255, 255, 0); // Subnet Mask
 
-const char* ssid = "ESP32_AP";
-const char* password = "12345678";
+const char* ssid = "TTD_Quat";
+const char* password = "TTD.2022";
 
 const char* server_ip = "192.168.4.115"; // IP address of the ESP32 server in AP mode
 const uint16_t server_port = 5000; // Port of the ESP32 server
@@ -209,12 +209,12 @@ void setup() {
   dutyCycle = getDuty(2000);
   Serial.println(dutyCycle);
   ledcWrite(pwmChannel, dutyCycle);
-  delay(4000);  
+  delay(5000);  
 
   // 1000us / 20000us
   dutyCycle = getDuty(1000);
   ledcWrite(pwmChannel, dutyCycle);
-  delay(4000);  
+  delay(5000);  
 
   // Serial port for debugging purposes
   Serial.begin(115200);

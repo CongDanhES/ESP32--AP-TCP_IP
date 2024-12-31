@@ -1,5 +1,5 @@
 const char index_html[] PROGMEM = R"rawliteral(
-<meta http-equiv="refresh" content="4">
+<meta http-equiv="refresh" content="2">
 <!DOCTYPE HTML><html>
 <head>
   <title>ĐIỀU KHIỂN TỐC ĐỘ XOAY</title>
